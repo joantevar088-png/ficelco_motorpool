@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Trip History #{{ req.id }}{% endblock %}
+{% block page_title %}🗺️ Trip Map - Request #{{ req.id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map {
+        height: 500px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        z-index: 1;
+    }
+    .info-panel {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+        border-left: 5px solid #FCD116;
+    }
+    @media (max-width: 768px) {
+        #map { height: 400px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="info-panel">
+    <div class="row g-3">
+        <div class="col-md-3"><strong>Requester:</strong> {{ req.requested_by.username }}</div>
+        <div class="col-md-3"><strong>Destination:</strong> {{ req.destination }}</div>
+        <div class="col-md-3"><strong>Driver:</strong> {{ req.driver.name|default:"N/A" }}</div>
+        <div class="col-md-3"><strong>Vehicle:</strong> {{ req.vehicle.plate_number|default:"N/A" }}</div>
+    </div>
+</div>
+<div id="map"></div>
+
+<div class="modal fade" id="pointModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📍 Stop Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalContent"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const map = L.map('map').setView([13.8333, 124.25], 10);
+
+    // Esri World Street Map — FREE, no API key, no blocking
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 19
+    }).addTo(map);
+
+    const points = {{ points|safe }};
+
+    if (points.length > 0) {
+        const latlngs = points.map(function(p) {
+            return [p.latitude, p.longitude];
+        });
+
+        L.polyline(latlngs, {
+            color: '#CE1126',
+            weight: 4,
+            opacity: 0.85
+        }).addTo(map);
+
+        points.forEach(function(p) {
+            const marker = L.marker([p.latitude, p.longitude]).addTo(map);
+            marker.on('click', function() {
+                document.getElementById('modalContent').innerHTML =
+                    '<p><strong>Time:</strong> ' + new Date(p.timestamp).toLocaleString() + '</p>' +
+                    '<p><strong>Stop Duration:</strong> ' + p.stop_duration_min + ' minutes</p>' +
+                    '<p><strong>Note:</strong> ' + (p.note || 'No notes') + '</p>';
+                new bootstrap.Modal(document.getElementById('pointModal')).show();
+            });
+        });
+
+        map.fitBounds(latlngs);
+    } else {
+        map.setView([13.5833, 124.2333], 11);
+    }
+</script>
+{% endblock %}

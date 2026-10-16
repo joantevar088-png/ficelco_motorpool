@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - FICELCO</title>
+    {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'images/ficelco-logo.png' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 15px;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+        .card { width: 100%; max-width: 550px; border-radius: 15px; border: none; }
+        .card input, .card select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+        .card input:focus, .card select:focus {
+            outline: none;
+            border-color: #1e3a8a;
+        }
+        .card label { font-weight: 600; color: #444; margin-top: 12px; display: block; }
+        .logo-header { text-align: center; margin-bottom: 20px; }
+        .logo-header img {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: white;
+            padding: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 480px) {
+            .card-body { padding: 25px 20px !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card shadow-lg">
+        <div class="card-body p-5">
+            <div class="logo-header">
+                <img src="{% static 'images/ficelco-logo.png' %}" alt="FICELCO">
+            </div>
+            <h3 class="text-center mb-4" style="color:#1e3a8a;">Create Account</h3>
+
+            <form method="POST">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary w-100 mt-3 py-2">
+                    <i class="bi bi-person-plus"></i> Register
+                </button>
+            </form>
+
+            <p class="text-center mt-3 mb-0">
+                Already have an account? <a href="{% url 'login' %}" class="fw-bold">Login here</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

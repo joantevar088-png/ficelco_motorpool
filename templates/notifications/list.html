@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Notifications{% endblock %}
+{% block page_title %}🔔 Notifications{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        {% for notif in notifications %}
+        <div class="border-bottom py-3 d-flex justify-content-between {% if not notif.is_read %}bg-light{% endif %}">
+            <div>
+                <h6 class="mb-1">
+                    {% if not notif.is_read %}<span class="badge bg-danger">NEW</span>{% endif %}
+                    {{ notif.title }}
+                </h6>
+                <p class="mb-1 text-muted">{{ notif.message }}</p>
+                <small class="text-muted">{{ notif.created_at|date:"M d, Y H:i" }}</small>
+            </div>
+            {% if not notif.is_read %}
+            <a href="{% url 'mark_read' notif.id %}" class="btn btn-sm btn-primary align-self-center">Mark Read</a>
+            {% endif %}
+        </div>
+        {% empty %}
+        <p class="text-muted text-center py-4">Wala kang notifications.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

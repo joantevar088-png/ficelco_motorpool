@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Approve Request{% endblock %}
+{% block page_title %}✅ Approve Request #{{ req.id }}{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+    <!-- Request Details -->
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-file-text text-primary"></i> Request Details
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td><strong>Requester:</strong></td><td>{{ req.requested_by.username }}</td></tr>
+                    <tr><td><strong>Department:</strong></td><td>{{ req.department }}</td></tr>
+                    <tr><td><strong>Purpose:</strong></td><td>{{ req.purpose }}</td></tr>
+                    <tr><td><strong>Destination:</strong></td><td>{{ req.destination_full }}</td></tr>
+                    <tr><td><strong>Pickup:</strong></td><td>{{ req.pickup_location }}</td></tr>
+                    <tr><td><strong>Date Needed:</strong></td><td>{{ req.date_needed|date:"M d, Y" }}</td></tr>
+                    <tr><td><strong>Departure:</strong></td><td>{{ req.time_departure|time:"g:i A" }}</td></tr>
+                    <tr><td><strong>Return:</strong></td><td>{{ req.time_return|time:"g:i A" }}</td></tr>
+                    <tr><td><strong>Hours:</strong></td><td>{{ req.number_of_hours }}</td></tr>
+                    <tr><td><strong>Passengers:</strong></td><td>{{ req.number_of_passengers }}</td></tr>
+                    <tr>
+                        <td><strong>Trip Type:</strong></td>
+                        <td>
+                            <span class="badge bg-{% if req.trip_type == 'official' %}primary{% else %}secondary{% endif %}">
+                                {{ req.get_trip_type_display|upper }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+                {% if req.passenger_names %}
+                    <hr>
+                    <strong>Passenger Names:</strong>
+                    <pre style="font-family:inherit;font-size:0.9em;white-space:pre-line;margin-top:5px;">{{ req.passenger_names }}</pre>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign & Action -->
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-check-circle text-primary"></i> Assign Vehicle & Driver
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Assign Vehicle</strong></label>
+                        <select name="vehicle" class="form-select" required>
+                            <option value="">-- Select Vehicle --</option>
+                            {% for v in available_vehicles %}
+                                <option value="{{ v.id }}">{{ v.plate_number }} — {{ v.brand }} {{ v.model }} (Capacity: {{ v.capacity }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Assign Driver</strong></label>
+                        <select name="driver" class="form-select" required>
+                            <option value="">-- Select Driver --</option>
+                            {% for d in available_drivers %}
+                                <option value="{{ d.id }}">{{ d.name }} ({{ d.phone }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Motorpool Notes</strong></label>
+                        <textarea name="motorpool_notes" class="form-control" rows="3" placeholder="Optional notes..."></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" name="action" value="approve" class="btn btn-success">
+                            <i class="bi bi-check-circle-fill"></i> Approve & Assign
+                        </button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger" onclick="return confirm('Are you sure you want to reject this request?')">
+                            <i class="bi bi-x-circle-fill"></i> Reject
+                        </button>
+                        <a href="{% url 'motorpool_dashboard' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

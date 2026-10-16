@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Time In{% endblock %}
+{% block page_title %}🕐 Time In — Return{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-stop-circle text-primary"></i> Record Vehicle Return (Time In)
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info mb-4">
+                    <strong>Request #{{ req.id }}</strong><br>
+                    <strong>Destination:</strong> {{ req.destination_full }}<br>
+                    <strong>Driver:</strong> {{ req.driver.name|default:"N/A" }}<br>
+                    <strong>Vehicle:</strong> {{ req.vehicle.plate_number|default:"N/A" }}<br>
+                    <strong>Time Out:</strong> {{ req.actual_time_out|date:"F d, Y g:i A"|default:"N/A" }}
+                </div>
+                <div class="mb-4">
+                    <label class="form-label"><strong>Current Date & Time</strong></label>
+                    <input type="text" class="form-control" value="{% now 'F d, Y g:i A' %}" readonly>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-lg w-100">
+                        <i class="bi bi-stop-circle-fill"></i> Confirm Time In
+                    </button>
+                    <a href="{% url 'request_detail' req.id %}" class="btn btn-secondary w-100 mt-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

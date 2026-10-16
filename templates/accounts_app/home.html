@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICELCO Motorpool System</title>
+    {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'images/ficelco-logo.png' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .hero {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 100px 40px;
+            text-align: center;
+        }
+        .hero h1 { font-size: 3em; margin-bottom: 20px; font-weight: 700; }
+        .hero p { font-size: 1.2em; max-width: 700px; margin: 0 auto 35px; opacity: 0.95; }
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+        }
+        .feature-card .icon { font-size: 2.5em; margin-bottom: 15px; }
+        .feature-card h4 { color: #1e3a8a; font-weight: 600; }
+        .navbar-brand img {
+            width: 35px; height: 35px;
+            border-radius: 50%;
+            background: white;
+            padding: 2px;
+            margin-right: 8px;
+        }
+        footer {
+            background: #1e3a8a;
+            color: rgba(255,255,255,0.8);
+            padding: 25px;
+            text-align: center;
+            margin-top: 50px;
+        }
+        @media (max-width: 768px) {
+            .hero { padding: 60px 20px; }
+            .hero h1 { font-size: 1.8em; }
+            .hero p { font-size: 1em; }
+            .feature-card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: #1e3a8a;">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="/">
+                <img src="{% static 'images/ficelco-logo.png' %}" alt="FICELCO">
+                <span>FICELCO Motorpool</span>
+            </a>
+            <div class="ms-auto">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-light btn-sm me-2">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-light btn-sm me-2">
+                        <i class="bi bi-box-arrow-in-right"></i> Login
+                    </a>
+                    <a href="{% url 'register' %}" class="btn btn-warning btn-sm">
+                        <i class="bi bi-person-plus"></i> Register
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>FICELCO Vehicle Request System</h1>
+        <p>Request cooperative vehicles, track trips in real-time, and manage the motorpool — all in one platform.</p>
+        {% if not user.is_authenticated %}
+            <a href="{% url 'register' %}" class="btn btn-warning btn-lg me-2">
+                <i class="bi bi-rocket-takeoff"></i> Get Started
+            </a>
+            <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">
+                <i class="bi bi-box-arrow-in-right"></i> Login
+            </a>
+        {% endif %}
+    </section>
+
+    <div class="container my-5">
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card text-center">
+                    <div class="icon">📝</div>
+                    <h4>Request Vehicle</h4>
+                    <p class="text-muted">Department employees can request vehicles online anytime.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card text-center">
+                    <div class="icon">🔔</div>
+                    <h4>Real-time Notifications</h4>
+                    <p class="text-muted">Motorpool notifies departments when vehicles and drivers are available.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card text-center">
+                    <div class="icon">🗺️</div>
+                    <h4>Live Map Tracking</h4>
+                    <p class="text-muted">Track trips on the Catanduanes map with history and markers.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="feature-card text-center">
+                    <div class="icon">🚙</div>
+                    <h4>Fleet Management</h4>
+                    <p class="text-muted">Manage all vehicles, drivers, and trip logs in one place.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p class="mb-0">&copy; 2026 FICELCO Cooperative. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>

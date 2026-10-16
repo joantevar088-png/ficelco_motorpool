@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}My Requests{% endblock %}
+{% block page_title %}📋 My Vehicle Requests{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person-lines-fill text-primary"></i> My Requests</span>
+        <a href="{% url 'create_request' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle"></i> New Request
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Destination</th>
+                        <th>Purpose</th>
+                        <th>Date Needed</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requests %}
+                    <tr>
+                        <td><strong>#{{ req.id }}</strong></td>
+                        <td>{{ req.destination_full }}</td>
+                        <td>{{ req.purpose|truncatechars:50 }}</td>
+                        <td>{{ req.date_needed|date:"M d, Y" }}<br><small class="text-muted">{{ req.time_departure|time:"g:i A" }}</small></td>
+                        <td>
+                            <span class="badge bg-{% if req.status == 'pending' %}warning{% elif req.status == 'approved' %}success{% elif req.status == 'ongoing' %}info{% elif req.status == 'completed' %}secondary{% elif req.status == 'rejected' %}danger{% else %}dark{% endif %}">
+                                {{ req.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'request_detail' req.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            No requests yet. <a href="{% url 'create_request' %}">Create your first request</a>.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

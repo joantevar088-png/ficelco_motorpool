@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}General Manager Approval{% endblock %}
+{% block page_title %}✅ Approved By — General Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-shield-check text-primary"></i> Approval: General Manager
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info mb-4">
+                    <strong>Request #{{ req.id }}</strong><br>
+                    <small>{{ req.destination_full }}</small>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label"><strong>General Manager Name</strong></label>
+                        <input type="text" name="general_manager_name" class="form-control"
+                               value="Francis Gianan" required>
+                        <div class="form-text">Default: Francis Gianan</div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label"><strong>Date & Time</strong></label>
+                        <input type="text" class="form-control" value="{% now 'F d, Y g:i A' %}" readonly>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle-fill"></i> Approve
+                        </button>
+                        <a href="{% url 'request_detail' req.id %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

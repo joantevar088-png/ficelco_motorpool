@@ -1,0 +1,831 @@
+{% extends 'base.html' %}
+{% block title %}Live Map{% endblock %}
+{% block page_title %}🗺️ Live Vehicle Tracking - Catanduanes{% endblock %}
+
+{% block extra_css %}
+<style>
+    .gis-container {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 180px);
+        min-height: 500px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    #map { width: 100%; height: 100%; background: #1a1a1a; }
+
+    .gis-panel-tl {
+        position: absolute;
+        top: 15px; left: 60px;
+        z-index: 1000;
+        background: rgba(30, 30, 40, 0.95);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 0.85em;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .layer-btn {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.15);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85em;
+        transition: all 0.2s;
+    }
+    .layer-btn:hover, .layer-btn.active {
+        background: var(--ficelco-blue);
+        border-color: var(--ficelco-yellow);
+    }
+
+    .gis-legend {
+        position: absolute;
+        bottom: 15px; left: 15px;
+        z-index: 1000;
+        background: rgba(30, 30, 40, 0.95);
+        color: white;
+        padding: 12px 15px;
+        border-radius: 8px;
+        font-size: 0.8em;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .gis-legend .title {
+        color: #FCD116;
+        font-weight: 700;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+    .gis-legend .item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 5px;
+    }
+    .gis-legend .dot {
+        width: 12px; height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .gis-info-br {
+        position: absolute;
+        bottom: 15px; right: 15px;
+        z-index: 1000;
+        background: rgba(30, 30, 40, 0.95);
+        color: white;
+        padding: 12px 18px;
+        border-radius: 8px;
+        font-size: 0.8em;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .gis-info-br .label {
+        color: #FCD116;
+        font-weight: 600;
+        font-size: 0.75em;
+        text-transform: uppercase;
+    }
+    .gis-info-br .value {
+        color: white;
+        font-weight: 700;
+        font-size: 1.3em;
+    }
+
+    .leaflet-control-zoom a {
+        background: rgba(30, 30, 40, 0.95) !important;
+        color: white !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
+    }
+    .leaflet-control-zoom a:hover {
+        background: #0066cc !important;
+        color: #FCD116 !important;
+    }
+    .leaflet-control-attribution {
+        background: rgba(30, 30, 40, 0.9) !important;
+        color: rgba(255,255,255,0.6) !important;
+        font-size: 0.7em !important;
+    }
+    .leaflet-control-attribution a { color: #FCD116 !important; }
+
+    .leaflet-popup-content-wrapper {
+        background: rgba(30, 30, 40, 0.98) !important;
+        color: white !important;
+        border-radius: 8px !important;
+        border: 1px solid rgba(252, 209, 22, 0.3);
+    }
+    .leaflet-popup-tip { background: rgba(30, 30, 40, 0.98) !important; }
+    .leaflet-popup-content strong { color: #FCD116; }
+
+    .municipality-marker {
+        background: #FCD116;
+        border: 3px solid #0066cc;
+        border-radius: 50%;
+        width: 16px; height: 16px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        box-shadow: 0 0 10px rgba(252, 209, 22, 0.8);
+    }
+    .municipality-marker:hover { transform: scale(1.4); }
+
+    .ficelco-marker {
+        background: #4CAF50;
+        border: 3px solid white;
+        border-radius: 50%;
+        width: 20px; height: 20px;
+        box-shadow: 0 0 15px rgba(76,175,80,0.9);
+    }
+
+    /* Full-screen modal */
+    .modal-fullscreen-custom {
+        max-width: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    .modal-fullscreen-custom .modal-content {
+        height: 100vh;
+        border-radius: 0;
+        border: none;
+        background: #1a1a1a;
+    }
+    .modal-fullscreen-custom .modal-body {
+        padding: 0;
+        height: calc(100vh - 130px);
+        position: relative;
+    }
+    #modalMap {
+        width: 100%;
+        height: 100%;
+        background: #1a1a1a;
+    }
+
+    /* Floating info panel inside modal */
+    .modal-overlay-panel {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 1000;
+        background: rgba(30, 30, 40, 0.95);
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        width: 320px;
+        max-height: calc(100% - 30px);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .modal-overlay-panel .trip-summary {
+        background: linear-gradient(135deg, #0066cc, #004a99);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+        color: white;
+    }
+    .modal-overlay-panel .trip-summary .label {
+        font-size: 0.7em;
+        opacity: 0.85;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .modal-overlay-panel .trip-summary .value {
+        font-size: 1.1em;
+        font-weight: 700;
+        color: #FCD116;
+    }
+
+    .timeline-container {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+    .timeline-container::-webkit-scrollbar { width: 6px; }
+    .timeline-container::-webkit-scrollbar-thumb { background: #0066cc; border-radius: 3px; }
+
+    .timeline-title {
+        color: #FCD116;
+        font-weight: 700;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        letter-spacing: 0.5px;
+    }
+    .timeline-item {
+        position: relative;
+        padding-left: 28px;
+        padding-bottom: 16px;
+        border-left: 2px solid rgba(252, 209, 22, 0.3);
+        margin-left: 6px;
+    }
+    .timeline-item:last-child {
+        border-left: 2px solid transparent;
+        padding-bottom: 0;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -8px; top: 0;
+        width: 14px; height: 14px;
+        border-radius: 50%;
+        background: #FCD116;
+        border: 3px solid #1e1e28;
+        box-shadow: 0 0 10px rgba(252, 209, 22, 0.8);
+    }
+    .timeline-item.start::before {
+        background: #4CAF50;
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.8);
+    }
+    .timeline-item.end::before {
+        background: #CE1126;
+        box-shadow: 0 0 10px rgba(206, 17, 38, 0.8);
+    }
+    .timeline-item.stop::before {
+        background: #FCD116;
+        box-shadow: 0 0 15px rgba(252, 209, 22, 1);
+        animation: pulse-yellow 1.5s infinite;
+    }
+    @keyframes pulse-yellow {
+        0%, 100% { box-shadow: 0 0 10px rgba(252, 209, 22, 0.8); }
+        50% { box-shadow: 0 0 20px rgba(252, 209, 22, 1), 0 0 30px rgba(252, 209, 22, 0.6); }
+    }
+    .timeline-item .place {
+        color: white;
+        font-weight: 700;
+        font-size: 0.9em;
+        margin-bottom: 3px;
+    }
+    .timeline-item .time {
+        color: #FCD116;
+        font-size: 0.75em;
+        font-weight: 600;
+    }
+    .timeline-item .detail {
+        color: #aaa;
+        font-size: 0.75em;
+        margin-top: 3px;
+    }
+    .timeline-item .duration {
+        display: inline-block;
+        background: rgba(0, 102, 204, 0.3);
+        color: #4A90E2;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.7em;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+    .timeline-item.stop .duration {
+        background: rgba(252, 209, 22, 0.2);
+        color: #FCD116;
+    }
+
+    .routing-loader {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2000;
+        background: rgba(30, 30, 40, 0.95);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 10px;
+        font-size: 0.9em;
+        display: none;
+        border: 2px solid #FCD116;
+    }
+    .routing-loader.show { display: block; }
+    .spinner {
+        display: inline-block;
+        width: 20px; height: 20px;
+        border: 3px solid rgba(252, 209, 22, 0.3);
+        border-top-color: #FCD116;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+        vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+        .gis-container { height: calc(100vh - 150px); }
+        .gis-panel-tl { top: 10px; left: 55px; padding: 6px 10px; font-size: 0.75em; flex-wrap: wrap; }
+        .modal-overlay-panel {
+            top: auto;
+            bottom: 10px;
+            right: 10px;
+            left: 10px;
+            width: auto;
+            max-height: 45vh;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gis-container">
+    <div class="gis-panel-tl">
+        <i class="bi bi-layers-fill" style="color:#FCD116;"></i>
+        <span style="font-weight:600;">LAYERS:</span>
+        <button class="layer-btn active" onclick="switchLayer('dark', event)">Dark</button>
+        <button class="layer-btn" onclick="switchLayer('street', event)">Street</button>
+        <button class="layer-btn" onclick="switchLayer('satellite', event)">Satellite</button>
+    </div>
+
+    <div class="gis-legend">
+        <div class="title">Legend</div>
+        <div class="item"><div class="dot" style="background:#4CAF50;border:2px solid white;"></div><span>FICELCO Main Office</span></div>
+        <div class="item"><div class="dot" style="background:#FCD116;border:2px solid #0066cc;"></div><span>Municipality</span></div>
+        <div class="item"><div class="dot" style="background:#4A90E2;border:2px solid #FCD116;"></div><span>Active Vehicle</span></div>
+        <div class="item"><div class="dot" style="background:#CE1126;"></div><span>Route Path</span></div>
+    </div>
+
+    <div class="gis-info-br">
+        <div class="label">Active Trips</div>
+        <div class="value">{{ ongoing|length }}</div>
+    </div>
+
+    <div id="map"></div>
+</div>
+
+<!-- Full-Screen Modal -->
+<div class="modal fade" id="municipalityModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen-custom">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:2px solid #FCD116;background:#0066cc;color:white;padding:15px 25px;">
+                <h5 class="modal-title">
+                    <i class="bi bi-geo-alt-fill" style="color:#FCD116;"></i>
+                    <span id="modalTitle">Municipality</span>
+                    <small id="modalInfo" style="color:rgba(255,255,255,0.75);margin-left:15px;font-size:0.75em;"></small>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalMap"></div>
+
+                <!-- Floating Panel -->
+                <div class="modal-overlay-panel">
+                    <div class="trip-summary">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="label">Distance</div>
+                                <div class="value" id="tripDistance">—</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="label">Duration</div>
+                                <div class="value" id="tripDuration">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-container">
+                        <div class="timeline-title">
+                            <i class="bi bi-clock-history"></i> Trip Timeline
+                        </div>
+                        <div id="tripTimeline"></div>
+                    </div>
+                </div>
+
+                <div class="routing-loader" id="modalRoutingLoader">
+                    <span class="spinner"></span>Loading route...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ============================
+    // LAYERS
+    // ============================
+    const layers = {
+        dark: {
+            base: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 16 }),
+            labels: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, pane: 'shadowPane' })
+        },
+        street: {
+            base: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 19 }),
+            labels: null
+        },
+        satellite: {
+            base: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 19 }),
+            labels: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, pane: 'shadowPane' })
+        }
+    };
+
+    const map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([13.7000, 124.3000], 10);
+    let currentBase = layers.dark.base;
+    let currentLabels = layers.dark.labels;
+    currentBase.addTo(map);
+    currentLabels.addTo(map);
+
+    function switchLayer(type, event) {
+        if (event) event.preventDefault();
+        map.removeLayer(currentBase);
+        if (currentLabels) map.removeLayer(currentLabels);
+        currentBase = layers[type].base;
+        currentLabels = layers[type].labels;
+        currentBase.addTo(map);
+        if (currentLabels) currentLabels.addTo(map);
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        if (event && event.target) event.target.classList.add('active');
+    }
+
+    // ============================
+    // FICELCO MAIN OFFICE — Marinawa, Bato
+    // ============================
+    const FICELCO_OFFICE = {
+        lat: 13.6100,
+        lng: 124.2900,
+        name: 'FICELCO Main Office, Marinawa, Bato'
+    };
+
+    const ficelcoIcon = L.divIcon({
+        className: 'ficelco-marker',
+        html: '',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+    });
+
+    L.marker([FICELCO_OFFICE.lat, FICELCO_OFFICE.lng], { icon: ficelcoIcon })
+        .addTo(map)
+        .bindPopup('<div style="min-width:180px;">' +
+            '<div style="color:#4CAF50;font-weight:700;font-size:1.05em;margin-bottom:6px;">🏢 FICELCO Main Office</div>' +
+            '<div style="font-size:0.85em;color:#ccc;">Marinawa, Bato, Catanduanes</div>' +
+        '</div>');
+
+    // ============================
+    // MUNICIPALITIES
+    // ============================
+    const municipalities = [
+        { name: 'Virac',      lat: 13.5833, lng: 124.2333, capital: true,  population: '75,000', area: '152.4 km²', barangays: 63 },
+        { name: 'Bato',       lat: 13.6000, lng: 124.3000, capital: false, population: '21,000', area: '48.6 km²',  barangays: 27 },
+        { name: 'San Andres', lat: 13.6000, lng: 124.1000, capital: false, population: '38,000', area: '167.3 km²', barangays: 38 },
+        { name: 'Caramoran',  lat: 13.9833, lng: 124.1333, capital: false, population: '31,000', area: '258.2 km²', barangays: 27 },
+        { name: 'Pandan',     lat: 14.0500, lng: 124.1667, capital: false, population: '21,000', area: '119.6 km²', barangays: 26 },
+        { name: 'Bagamanoc',  lat: 13.9333, lng: 124.2833, capital: false, population: '12,000', area: '80.7 km²',  barangays: 18 },
+        { name: 'Panganiban', lat: 13.9167, lng: 124.3000, capital: false, population: '10,000', area: '79.8 km²',  barangays: 23 },
+        { name: 'Viga',       lat: 13.8667, lng: 124.3167, capital: false, population: '22,000', area: '156.3 km²', barangays: 23 },
+        { name: 'Gigmoto',    lat: 13.7833, lng: 124.3833, capital: false, population: '8,500',  area: '105.8 km²', barangays: 9 },
+        { name: 'Baras',      lat: 13.6667, lng: 124.3667, capital: false, population: '13,000', area: '109.3 km²', barangays: 29 },
+        { name: 'San Miguel', lat: 13.6500, lng: 124.3000, capital: false, population: '15,000', area: '115.8 km²', barangays: 27 }
+    ];
+
+    municipalities.forEach(function(muni) {
+        const icon = L.divIcon({
+            className: 'municipality-marker',
+            html: '',
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+        });
+
+        const marker = L.marker([muni.lat, muni.lng], { icon: icon }).addTo(map);
+
+        const popupContent =
+            '<div style="min-width:200px;">' +
+                '<div style="color:#FCD116;font-weight:700;font-size:1.05em;margin-bottom:4px;">' +
+                    (muni.capital ? '⭐ ' : '📍 ') + muni.name +
+                '</div>' +
+                '<div style="font-size:0.8em;color:#ccc;margin-bottom:8px;">' +
+                    (muni.capital ? 'Provincial Capital' : 'Municipality') + ' • ' + muni.barangays + ' barangays' +
+                '</div>' +
+                '<button class="open-detail-btn" data-muni="' + muni.name + '" ' +
+                    'style="background:#FCD116;color:#0066cc;border:none;padding:8px 12px;border-radius:6px;font-weight:700;cursor:pointer;width:100%;font-size:0.85em;">' +
+                    '📍 Open Detailed Map' +
+                '</button>' +
+            '</div>';
+
+        marker.bindPopup(popupContent);
+
+        marker.on('popupopen', function() {
+            const btn = document.querySelector('.open-detail-btn[data-muni="' + muni.name + '"]');
+            if (btn) {
+                btn.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    map.closePopup();
+                    openMunicipalityMap(muni);
+                };
+            }
+        });
+    });
+
+    // ============================
+    // ROAD ROUTING via OSRM
+    // ============================
+    async function getRoadRoute(startLat, startLng, endLat, endLng) {
+        const url = 'https://router.project-osrm.org/route/v1/driving/' +
+                    startLng + ',' + startLat + ';' +
+                    endLng + ',' + endLat +
+                    '?overview=full&geometries=geojson&steps=true';
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                const route = data.routes[0];
+                const coordinates = route.geometry.coordinates.map(function(coord) {
+                    return [coord[1], coord[0]];
+                });
+
+                return {
+                    success: true,
+                    coordinates: coordinates,
+                    distance: route.distance,
+                    duration: route.duration,
+                    legs: route.legs
+                };
+            } else {
+                return { success: false, error: 'No route found' };
+            }
+        } catch (error) {
+            console.error('Routing error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    function formatDistance(meters) {
+        if (meters < 1000) return meters.toFixed(0) + ' m';
+        return (meters / 1000).toFixed(2) + ' km';
+    }
+
+    function formatDuration(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        if (hours > 0) return hours + 'h ' + mins + 'm';
+        return mins + ' min';
+    }
+
+    function formatTime(date) {
+        return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    }
+
+    // ============================
+    // DETECT STOPS — 10+ minutes stationary
+    // ============================
+    // Simulates stop detection from GPS data:
+    // If a vehicle stays in the same location for 10+ minutes, mark as "STOP"
+    function detectStops(routeCoordinates, steps, totalDuration) {
+        const stops = [];
+        const stopThresholdMeters = 100;    // Vehicle considered stationary if moved < 100m
+        const stopThresholdMinutes = 10;    // Minimum stop duration in minutes
+
+        // Sample route points
+        const totalPoints = routeCoordinates.length;
+        const pointsPerStep = Math.max(Math.floor(totalPoints / steps.length), 1);
+
+        let currentStop = null;
+        let currentTime = 0;
+
+        steps.forEach(function(step, idx) {
+            // Estimate time for this step based on distance ratio
+            const stepDuration = (step.distance / totalDuration) * totalDuration;
+            const stepStartTime = currentTime;
+            const stepEndTime = currentTime + stepDuration;
+
+            // If step's distance is very small (< 100m) → potential stop
+            if (step.distance < stopThresholdMeters) {
+                const stepMinutes = stepDuration / 60;
+
+                if (currentStop) {
+                    // Extend existing stop
+                    currentStop.duration += stepMinutes;
+                    currentStop.endTime = stepEndTime;
+                } else {
+                    // Start new stop
+                    const coordIdx = Math.min(idx * pointsPerStep, totalPoints - 1);
+                    currentStop = {
+                        coord: routeCoordinates[coordIdx],
+                        roadName: step.name || 'Unnamed road',
+                        startTime: stepStartTime,
+                        endTime: stepEndTime,
+                        duration: stepMinutes
+                    };
+                }
+            } else {
+                // Vehicle moved — close current stop if it lasted 10+ minutes
+                if (currentStop) {
+                    if (currentStop.duration >= stopThresholdMinutes) {
+                        stops.push(currentStop);
+                    }
+                    currentStop = null;
+                }
+            }
+
+            currentTime = stepEndTime;
+        });
+
+        // Check last stop
+        if (currentStop && currentStop.duration >= stopThresholdMinutes) {
+            stops.push(currentStop);
+        }
+
+        return stops;
+    }
+
+    // ============================
+    // MUNICIPALITY MODAL
+    // ============================
+    let modalMap = null;
+
+    async function openMunicipalityMap(muni) {
+        document.getElementById('modalTitle').innerText = (muni.capital ? '⭐ ' : '📍 ') + muni.name;
+        document.getElementById('modalInfo').innerHTML =
+            'Population: ' + muni.population +
+            ' | Area: ' + muni.area +
+            ' | Barangays: ' + muni.barangays;
+
+        document.getElementById('tripDistance').innerText = '—';
+        document.getElementById('tripDuration').innerText = '—';
+        document.getElementById('tripTimeline').innerHTML = '<div style="color:#aaa;font-size:0.85em;">Loading...</div>';
+
+        const modal = new bootstrap.Modal(document.getElementById('municipalityModal'));
+        modal.show();
+
+        setTimeout(async function() {
+            if (modalMap) {
+                modalMap.remove();
+                modalMap = null;
+            }
+
+            modalMap = L.map('modalMap', { zoomControl: true, preferCanvas: true })
+                .setView([muni.lat, muni.lng], 10);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                { attribution: 'Tiles &copy; Esri', maxZoom: 19 }).addTo(modalMap);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+                { maxZoom: 19, pane: 'shadowPane' }).addTo(modalMap);
+
+            document.getElementById('modalRoutingLoader').classList.add('show');
+
+            const route = await getRoadRoute(
+                FICELCO_OFFICE.lat, FICELCO_OFFICE.lng,
+                muni.lat, muni.lng
+            );
+
+            document.getElementById('modalRoutingLoader').classList.remove('show');
+
+            if (route.success) {
+                document.getElementById('tripDistance').innerText = formatDistance(route.distance);
+                document.getElementById('tripDuration').innerText = formatDuration(route.duration);
+
+                // Red route line — follows real roads
+                L.polyline(route.coordinates, {
+                    color: '#CE1126',
+                    weight: 5,
+                    opacity: 0.85,
+                    lineJoin: 'round',
+                    lineCap: 'round'
+                }).addTo(modalMap);
+
+                // Start marker
+                const startIcon = L.divIcon({
+                    className: '',
+                    html: '<div style="width:22px;height:22px;background:#4CAF50;border:4px solid white;border-radius:50%;box-shadow:0 0 15px rgba(76,175,80,0.9);"></div>',
+                    iconSize: [22, 22], iconAnchor: [11, 11]
+                });
+                L.marker([FICELCO_OFFICE.lat, FICELCO_OFFICE.lng], { icon: startIcon })
+                    .addTo(modalMap)
+                    .bindPopup('<strong style="color:#4CAF50;">START</strong><br>' + FICELCO_OFFICE.name);
+
+                // End marker
+                const endIcon = L.divIcon({
+                    className: '',
+                    html: '<div style="width:22px;height:22px;background:#CE1126;border:4px solid white;border-radius:50%;box-shadow:0 0 15px rgba(206,17,38,0.9);"></div>',
+                    iconSize: [22, 22], iconAnchor: [11, 11]
+                });
+                L.marker([muni.lat, muni.lng], { icon: endIcon })
+                    .addTo(modalMap)
+                    .bindPopup('<strong style="color:#CE1126;">DESTINATION</strong><br>' + muni.name);
+
+                // ============================
+                // DETECT STOPS from route data
+                // ============================
+                const stops = detectStops(route.coordinates, route.legs[0].steps, route.duration);
+
+                // Add YELLOW MARKERS for each detected stop
+                stops.forEach(function(stop, idx) {
+                    const stopIcon = L.divIcon({
+                        className: '',
+                        html: '<div style="width:18px;height:18px;background:#FCD116;border:3px solid #0066cc;border-radius:50%;box-shadow:0 0 12px rgba(252,209,22,0.9);animation:pulse-yellow 1.5s infinite;"></div>',
+                        iconSize: [18, 18],
+                        iconAnchor: [9, 9]
+                    });
+
+                    const stopTime = new Date();
+                    stopTime.setTime(stopTime.getTime() + stop.startTime * 1000);
+
+                    L.marker(stop.coord, { icon: stopIcon })
+                        .addTo(modalMap)
+                        .bindPopup(
+                            '<div style="min-width:180px;">' +
+                                '<div style="color:#FCD116;font-weight:700;margin-bottom:6px;">🛑 Vehicle Stopped</div>' +
+                                '<div style="font-size:0.85em;margin-bottom:4px;"><strong>Location:</strong> ' + stop.roadName + '</div>' +
+                                '<div style="font-size:0.85em;margin-bottom:4px;"><strong>Time:</strong> ' + formatTime(stopTime) + '</div>' +
+                                '<div style="font-size:0.85em;"><strong>Duration:</strong> ' + Math.round(stop.duration) + ' minutes</div>' +
+                            '</div>'
+                        );
+                });
+
+                // ============================
+                // BUILD TIMELINE with STOPS highlighted
+                // ============================
+                const totalTime = route.duration;
+                let currentTime = new Date();
+
+                let timelineHTML = '';
+
+                // Start
+                timelineHTML += '<div class="timeline-item start">' +
+                    '<div class="place">' + FICELCO_OFFICE.name + '</div>' +
+                    '<div class="time"><i class="bi bi-clock"></i> ' + formatTime(currentTime) + '</div>' +
+                    '<div class="detail">Vehicle departed</div>' +
+                    '<span class="duration">Start</span>' +
+                '</div>';
+
+                // Stops
+                stops.forEach(function(stop) {
+                    const stopTime = new Date();
+                    stopTime.setTime(stopTime.getTime() + stop.startTime * 1000);
+
+                    timelineHTML += '<div class="timeline-item stop">' +
+                        '<div class="place">🛑 ' + stop.roadName + '</div>' +
+                        '<div class="time"><i class="bi bi-clock"></i> ' + formatTime(stopTime) + '</div>' +
+                        '<div class="detail">Vehicle stopped (GPS stationary)</div>' +
+                        '<span class="duration">' + Math.round(stop.duration) + ' min stop</span>' +
+                    '</div>';
+                });
+
+                // End
+                const endTime = new Date();
+                endTime.setTime(endTime.getTime() + totalTime * 1000);
+                timelineHTML += '<div class="timeline-item end">' +
+                    '<div class="place">' + muni.name + ' Town Proper</div>' +
+                    '<div class="time"><i class="bi bi-clock"></i> ' + formatTime(endTime) + '</div>' +
+                    '<div class="detail">Arrived at destination</div>' +
+                    '<span class="duration">End</span>' +
+                '</div>';
+
+                document.getElementById('tripTimeline').innerHTML = timelineHTML;
+
+                modalMap.fitBounds(route.coordinates, { padding: [50, 50] });
+
+            } else {
+                document.getElementById('tripTimeline').innerHTML =
+                    '<div style="color:#CE1126;font-size:0.85em;">Unable to load route.</div>';
+            }
+
+            setTimeout(function() { modalMap.invalidateSize(); }, 200);
+        }, 400);
+    }
+
+    // ============================
+    // ONGOING TRIPS
+    // ============================
+    const ongoingTrips = [
+        {% for trip in ongoing %}
+        {
+            id: {{ trip.id }},
+            destination: "{{ trip.destination|escapejs }}",
+            driver: "{{ trip.driver.name|default:'N/A'|escapejs }}",
+            vehicle: "{{ trip.vehicle.plate_number|default:'N/A'|escapejs }}",
+            started: "{{ trip.trip_log.started_at|date:'M d, Y H:i'|default:'N/A' }}"
+        },
+        {% endfor %}
+    ];
+
+    const vehicleIcon = L.divIcon({
+        className: '',
+        html: '<div style="width:18px;height:18px;background:#4A90E2;border:3px solid #FCD116;border-radius:50%;box-shadow:0 0 12px rgba(74,144,226,0.9);"></div>',
+        iconSize: [18, 18], iconAnchor: [9, 9]
+    });
+
+    ongoingTrips.forEach(function(trip, idx) {
+        const lat = 13.5833 + (idx * 0.05);
+        const lng = 124.2333 + (idx * 0.05);
+        L.marker([lat, lng], { icon: vehicleIcon }).addTo(map)
+            .bindPopup('<div style="min-width:200px;">' +
+                '<div style="color:#FCD116;font-weight:700;margin-bottom:6px;">🚗 Trip #' + trip.id + '</div>' +
+                '<div style="font-size:0.85em;margin-bottom:4px;"><strong>Destination:</strong> ' + trip.destination + '</div>' +
+                '<div style="font-size:0.85em;margin-bottom:4px;"><strong>Driver:</strong> ' + trip.driver + '</div>' +
+                '<div style="font-size:0.85em;margin-bottom:4px;"><strong>Vehicle:</strong> ' + trip.vehicle + '</div>' +
+                '<div style="font-size:0.85em;"><strong>Started:</strong> ' + trip.started + '</div>' +
+            '</div>');
+    });
+</script>
+{% endblock %}

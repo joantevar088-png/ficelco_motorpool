@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% block title %}Request #{{ req.id }}{% endblock %}
+{% block page_title %}📋 Request #{{ req.id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-label {
+        color: #9295a4;
+        font-size: 0.78em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+    .detail-value {
+        color: #1a1a2e;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+    .signature-row {
+        padding: 12px 15px;
+        border-radius: 8px;
+        background: #f8f9fa;
+        margin-bottom: 8px;
+        border: 1px solid #e5e5e5;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .signature-row.signed {
+        background: #e8f5e9;
+        border-color: #c8e6c9;
+    }
+    .signature-row .label {
+        font-weight: 600;
+        color: #333;
+        font-size: 0.9em;
+    }
+    .signature-row .name {
+        color: #0066cc;
+        font-weight: 700;
+        font-size: 0.9em;
+    }
+    .signature-row .time {
+        color: #999;
+        font-size: 0.8em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Status Bar -->
+<div class="card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <span class="detail-label">Status</span><br>
+            <span class="badge bg-{% if req.status == 'pending' %}warning{% elif req.status == 'approved' %}success{% elif req.status == 'ongoing' %}info{% elif req.status == 'completed' %}secondary{% elif req.status == 'rejected' %}danger{% else %}dark{% endif %}" style="font-size:0.9em;padding:6px 14px;">
+                {{ req.get_status_display|upper }}
+            </span>
+            <span class="badge bg-{% if req.trip_type == 'official' %}primary{% else %}secondary{% endif %}" style="font-size:0.9em;padding:6px 14px;margin-left:5px;">
+                {{ req.get_trip_type_display|upper }}
+            </span>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            {% if req.status == 'approved' and req.is_fully_approved %}
+                <a href="{% url 'time_out' req.id %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-play-circle"></i> Time Out
+                </a>
+            {% endif %}
+            {% if req.status == 'ongoing' %}
+                <a href="{% url 'time_in' req.id %}" class="btn btn-success btn-sm">
+                    <i class="bi bi-stop-circle"></i> Time In
+                </a>
+            {% endif %}
+            {% if req.status == 'ongoing' %}
+                <a href="{% url 'trip_history' req.id %}" class="btn btn-info btn-sm">
+                    <i class="bi bi-map"></i> View Map
+                </a>
+            {% endif %}
+            <a href="{% url 'motorpool_dashboard' %}" class="btn btn-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Left Column: Request Details -->
+    <div class="col-lg-7">
+
+        <!-- Requester Info -->
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-person-fill text-primary"></i> Requester Information</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="detail-label">Requested By</div>
+                        <div class="detail-value">{{ req.requested_by.get_full_name|default:req.requested_by.username }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-label">Department</div>
+                        <div class="detail-value">{{ req.department }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-label">Date Filed</div>
+                        <div class="detail-value">{{ req.created_at|date:"F d, Y g:i A" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trip Details -->
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-geo-alt-fill text-primary"></i> Trip Details</div>
+            <div class="card-body">
+                <div class="detail-label">Purpose</div>
+                <div class="detail-value">{{ req.purpose }}</div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="detail-label">Destination</div>
+                        <div class="detail-value">{{ req.destination_full }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-label">Pickup Location</div>
+                        <div class="detail-value">{{ req.pickup_location }}</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="detail-label">Date Needed</div>
+                        <div class="detail-value">{{ req.date_needed|date:"M d, Y" }}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="detail-label">Departure</div>
+                        <div class="detail-value">{{ req.time_departure|time:"g:i A" }}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="detail-label">Return</div>
+                        <div class="detail-value">{{ req.time_return|time:"g:i A" }}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="detail-label">No. of Hours</div>
+                        <div class="detail-value">{{ req.number_of_hours }} hr(s)</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="detail-label">Passengers</div>
+                        <div class="detail-value">{{ req.number_of_passengers }}</div>
+                    </div>
+                    {% if req.estimated_return_date %}
+                    <div class="col-md-6">
+                        <div class="detail-label">Estimated Return Date</div>
+                        <div class="detail-value">{{ req.estimated_return_date|date:"M d, Y" }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if req.passenger_names %}
+                    <div class="detail-label">Passenger Names</div>
+                    <div class="detail-value" style="white-space:pre-line;font-weight:400;">{{ req.passenger_names }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Assignment Info -->
+        {% if req.vehicle or req.driver %}
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-truck text-primary"></i> Assignment</div>
+            <div class="card-body">
+                <div class="row">
+                    {% if req.vehicle %}
+                    <div class="col-md-6">
+                        <div class="detail-label">Vehicle</div>
+                        <div class="detail-value">{{ req.vehicle.plate_number }} — {{ req.vehicle.brand }} {{ req.vehicle.model }}</div>
+                    </div>
+                    {% endif %}
+                    {% if req.driver %}
+                    <div class="col-md-6">
+                        <div class="detail-label">Driver</div>
+                        <div class="detail-value">{{ req.driver.name }} ({{ req.driver.phone }})</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if req.motorpool_notes %}
+                    <div class="detail-label">Motorpool Notes</div>
+                    <div class="detail-value" style="font-weight:400;">{{ req.motorpool_notes }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Time Out / Time In -->
+        {% if req.actual_time_out or req.actual_time_in %}
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-clock-history text-primary"></i> Actual Times</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="detail-label">Time Out (Departure)</div>
+                        <div class="detail-value">{{ req.actual_time_out|date:"F d, Y g:i A"|default:"—" }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="detail-label">Time In (Return)</div>
+                        <div class="detail-value">{{ req.actual_time_in|date:"F d, Y g:i A"|default:"—" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Right Column: Signature Chain -->
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-pen-fill text-primary"></i> Signature Chain</div>
+            <div class="card-body">
+
+                <h6 style="font-size:0.8em;text-transform:uppercase;color:#9295a4;font-weight:700;margin-bottom:10px;letter-spacing:0.5px;">
+                    Authorized By
+                </h6>
+
+                <div class="signature-row {% if req.dispatcher_signed_at %}signed{% endif %}">
+                    <div>
+                        <div class="label">Dispatcher</div>
+                        {% if req.dispatcher_signed_at %}
+                            <div class="name"><i class="bi bi-check-circle-fill"></i> {{ req.dispatcher_name }}</div>
+                            <div class="time">{{ req.dispatcher_signed_at|date:"M d, Y g:i A" }}</div>
+                        {% else %}
+                            <div class="time">Pending signature</div>
+                        {% endif %}
+                    </div>
+                    {% if not req.dispatcher_signed_at %}
+                        <a href="{% url 'sign_dispatcher' req.id %}" class="btn btn-sm btn-primary">Sign</a>
+                    {% endif %}
+                </div>
+
+                <div class="signature-row {% if req.division_supervisor_signed_at %}signed{% endif %}">
+                    <div>
+                        <div class="label">Division Supervisor</div>
+                        {% if req.division_supervisor_signed_at %}
+                            <div class="name"><i class="bi bi-check-circle-fill"></i> {{ req.division_supervisor_name }}</div>
+                            <div class="time">{{ req.division_supervisor_signed_at|date:"M d, Y g:i A" }}</div>
+                        {% else %}
+                            <div class="time">Pending signature</div>
+                        {% endif %}
+                    </div>
+                    {% if not req.division_supervisor_signed_at %}
+                        <a href="{% url 'sign_division_supervisor' req.id %}" class="btn btn-sm btn-primary">Sign</a>
+                    {% endif %}
+                </div>
+
+                <div class="signature-row {% if req.department_manager_signed_at %}signed{% endif %}">
+                    <div>
+                        <div class="label">Department Manager</div>
+                        {% if req.department_manager_signed_at %}
+                            <div class="name"><i class="bi bi-check-circle-fill"></i> {{ req.department_manager_name }}</div>
+                            <div class="time">{{ req.department_manager_signed_at|date:"M d, Y g:i A" }}</div>
+                        {% else %}
+                            <div class="time">Pending signature</div>
+                        {% endif %}
+                    </div>
+                    {% if not req.department_manager_signed_at %}
+                        <a href="{% url 'sign_department_manager' req.id %}" class="btn btn-sm btn-primary">Sign</a>
+                    {% endif %}
+                </div>
+
+                <h6 style="font-size:0.8em;text-transform:uppercase;color:#9295a4;font-weight:700;margin:20px 0 10px;letter-spacing:0.5px;">
+                    Approved By
+                </h6>
+
+                <div class="signature-row {% if req.general_manager_signed_at %}signed{% endif %}">
+                    <div>
+                        <div class="label">General Manager</div>
+                        {% if req.general_manager_signed_at %}
+                            <div class="name"><i class="bi bi-check-circle-fill"></i> {{ req.general_manager_name }}</div>
+                            <div class="time">{{ req.general_manager_signed_at|date:"M d, Y g:i A" }}</div>
+                        {% else %}
+                            <div class="time">Pending approval</div>
+                        {% endif %}
+                    </div>
+                    {% if not req.general_manager_signed_at %}
+                        <a href="{% url 'sign_general_manager' req.id %}" class="btn btn-sm btn-warning">Approve</a>
+                    {% endif %}
+                </div>
+
+                <h6 style="font-size:0.8em;text-transform:uppercase;color:#9295a4;font-weight:700;margin:20px 0 10px;letter-spacing:0.5px;">
+                    Cleared By
+                </h6>
+
+                <div class="signature-row {% if req.guard_cleared_at %}signed{% endif %}">
+                    <div>
+                        <div class="label">Guard on Duty</div>
+                        {% if req.guard_cleared_at %}
+                            <div class="name"><i class="bi bi-check-circle-fill"></i> {{ req.guard_on_duty_name }}</div>
+                            <div class="time">{{ req.guard_cleared_at|date:"M d, Y g:i A" }}</div>
+                        {% else %}
+                            <div class="time">Pending clearance</div>
+                        {% endif %}
+                    </div>
+                    {% if not req.guard_cleared_at %}
+                        <a href="{% url 'sign_guard_on_duty' req.id %}" class="btn btn-sm btn-success">Clear</a>
+                    {% endif %}
+                </div>
+
+                <!-- Progress -->
+                <div style="margin-top:20px;padding-top:15px;border-top:1px solid #e5e5e5;">
+                    {% if req.is_fully_approved %}
+                        <div style="text-align:center;color:#4CAF50;font-weight:700;">
+                            <i class="bi bi-check-circle-fill"></i> Fully Signed & Approved
+                        </div>
+                    {% else %}
+                        <div style="text-align:center;color:#FCD116;font-weight:700;">
+                            <i class="bi bi-hourglass-split"></i> Awaiting Signatures
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

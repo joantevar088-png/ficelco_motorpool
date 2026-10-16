@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}📊 Dashboard Overview{% endblock %}
+
+{% block content %}
+
+<!-- Stats Grid -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon icon-blue">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="number">{{ total_users }}</div>
+            <div class="label">Total Users</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon icon-green">
+                <i class="bi bi-truck"></i>
+            </div>
+            <div class="number">{{ total_vehicles }}</div>
+            <div class="label">Total Vehicles</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon icon-yellow">
+                <i class="bi bi-clipboard-data"></i>
+            </div>
+            <div class="number">{{ total_requests }}</div>
+            <div class="label">Total Requests</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-icon icon-red">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div class="number">{{ pending_requests }}</div>
+            <div class="label">Pending</div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon icon-blue">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="number">{{ approved_requests }}</div>
+            <div class="label">Approved</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon icon-yellow">
+                <i class="bi bi-truck"></i>
+            </div>
+            <div class="number">{{ ongoing_trips }}</div>
+            <div class="label">Ongoing Trips</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon icon-green">
+                <i class="bi bi-check2-all"></i>
+            </div>
+            <div class="number">{{ completed_requests }}</div>
+            <div class="label">Completed</div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Requests -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history text-primary"></i> Recent Requests</span>
+        <a href="{% url 'request_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Requester</th>
+                        <th>Destination</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in recent_requests %}
+                    <tr>
+                        <td><strong>#{{ req.id }}</strong></td>
+                        <td>{{ req.requested_by.username }}</td>
+                        <td>{{ req.destination_full }}</td>
+                        <td>{{ req.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge bg-{% if req.status == 'pending' %}warning{% elif req.status == 'approved' %}success{% elif req.status == 'ongoing' %}info{% elif req.status == 'completed' %}secondary{% elif req.status == 'rejected' %}danger{% else %}dark{% endif %}">
+                                {{ req.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'request_detail' req.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">No recent activity.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

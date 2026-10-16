@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}Motorpool Dashboard{% endblock %}
+{% block page_title %}🚙 Motorpool Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon icon-yellow">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+            <div class="number">{{ stats.pending }}</div>
+            <div class="label">Pending Requests</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon icon-blue">
+                <i class="bi bi-truck"></i>
+            </div>
+            <div class="number">{{ available_vehicles|length }}</div>
+            <div class="label">Available Vehicles</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon icon-green">
+                <i class="bi bi-person-badge"></i>
+            </div>
+            <div class="number">{{ available_drivers|length }}</div>
+            <div class="label">Available Drivers</div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Requests -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-hourglass-split text-warning"></i> Pending Vehicle Requests
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Requested By</th>
+                        <th>Department</th>
+                        <th>Destination</th>
+                        <th>Date Needed</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in pending_requests %}
+                    <tr>
+                        <td><strong>#{{ req.id }}</strong></td>
+                        <td>{{ req.requested_by.username }}</td>
+                        <td>{{ req.department }}</td>
+                        <td>{{ req.destination_full }}</td>
+                        <td>{{ req.date_needed|date:"M d, Y" }}<br><small class="text-muted">{{ req.time_departure|time:"g:i A" }}</small></td>
+                        <td class="text-end">
+                            <a href="{% url 'approve_request' req.id %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-check-circle"></i> Approve
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No pending requests.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Ongoing Trips -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-truck text-primary"></i> Ongoing Trips
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Vehicle</th>
+                        <th>Driver</th>
+                        <th>Destination</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trip in ongoing_trips %}
+                    <tr>
+                        <td><strong>#{{ trip.id }}</strong></td>
+                        <td>{{ trip.vehicle.plate_number|default:"N/A" }}</td>
+                        <td>{{ trip.driver.name|default:"N/A" }}</td>
+                        <td>{{ trip.destination_full }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'notify_pickup' trip.id %}" class="btn btn-sm btn-warning">
+                                <i class="bi bi-bell"></i> Notify Pickup
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">No ongoing trips.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

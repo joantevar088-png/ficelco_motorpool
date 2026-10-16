@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Division Supervisor Signature{% endblock %}
+{% block page_title %}✍️ Division Supervisor Signature{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-pen-fill text-primary"></i> Signature: Authorized By — Division Supervisor
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info mb-4">
+                    <strong>Request #{{ req.id }}</strong><br>
+                    <small>{{ req.destination_full }}</small>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Division Supervisor Name</strong></label>
+                        <input type="text" name="division_supervisor_name" class="form-control"
+                               value="{{ user.get_full_name|default:user.username }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label"><strong>Date & Time</strong></label>
+                        <input type="text" class="form-control" value="{% now 'F d, Y g:i A' %}" readonly>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Confirm Signature
+                        </button>
+                        <a href="{% url 'request_detail' req.id %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
