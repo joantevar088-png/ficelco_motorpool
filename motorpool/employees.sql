@@ -16,8 +16,8 @@
 
 
 -- Dumping database structure for payroll
-CREATE DATABASE IF NOT EXISTS `payroll` /*!40100 DEFAULT CHARACTER SET latin1 */;
-USE `payroll`;
+CREATE DATABASE IF NOT EXISTS `accounts_app_customuser ` /*!40100 DEFAULT CHARACTER SET latin1 */;
+USE `ficelco_motorpool`;
 
 -- Dumping structure for table payroll.departments
 CREATE TABLE IF NOT EXISTS `departments` (
